@@ -1,0 +1,133 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int      @id @default(autoincrement())
+  email    String
+  password String
+  role     Role     @default(USER)
+  Profile  Profile?
+}
+
+model Profile {
+  id        Int     @id @default(autoincrement())
+  fullName  String
+  gender    Gender?
+  telephone String?
+  address   String?
+  avatar    String? @default("https://i.pinimg.com/originals/82/4d/b0/824db05450ed6305253092e8aedb329f.jpg")
+
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
+}
+
+model Book {
+  id Int @id @default(autoincrement())
+
+  name   String
+  author String
+
+  publicationDate String
+  pages           Int
+  isbn            String
+  price           Int
+  bookDetail      String
+  bookImage       String
+
+  CartItem CartItem[]
+}
+
+model Cart {
+  id Int @id @default(autoincrement())
+
+  userId     Int
+  totalPrice Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  cartItems   CartItem[]
+  Transaction Transaction?
+}
+
+model CartItem {
+  id       Int  @id @default(autoincrement())
+  cartId   Int
+  bookId   Int
+  quantity Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  Book Book  @relation(fields: [bookId], references: [id])
+  Cart Cart? @relation(fields: [cartId], references: [id])
+
+  @@unique([cartId, bookId])
+}
+
+model Transaction {
+  id        Int  @id @default(autoincrement())
+  paymentId Int?
+
+  userId Int
+  shipTo String?
+
+  cartId       Int    @unique
+  totalPrice   Int
+  paymentProof String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  Cart    Cart              @relation(fields: [cartId], references: [id])
+  status  TransactionStatus @default(PENDING)
+  Payment Payment?
+}
+
+model Payment {
+  id            Int @id @default(autoincrement())
+  transactionId Int @unique
+
+  paymentStatus PaymentStatus
+  paymentMethod String
+  paymentURL    String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  Transaction Transaction @relation(fields: [transactionId], references: [id])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum TransactionStatus {
+  PENDING
+  APPROVE
+  CANCELED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
